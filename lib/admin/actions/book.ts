@@ -12,46 +12,34 @@ export const createBook = async (params: BookParams) => {
         title: params.title,
         author: params.author,
         genre: params.genre,
-
         category: params.category,
         subcategory: params.subcategory || null,
-
         language: params.language,
-
         translated: params.translated,
         translator: params.translated ? params.translator || null : null,
-
         rating: params.rating,
-
         keywords: params.keywords ?? [],
         topics: params.topics ?? [],
-
         audience: params.audience,
         tradition: params.tradition,
-
         coverColor: params.coverColor,
-
         description: params.description,
         summary: params.summary,
-
         packageUrl: params.packageUrl,
-        coverUrl: params.coverUrl,
-
         uploader: params.uploader,
       })
       .returning();
 
     return {
       success: true,
-      data: newBook[0],
+      data: JSON.parse(JSON.stringify(newBook[0])),
     };
   } catch (error) {
-    console.error("[CREATE BOOK] Database error:", error);
+    console.error("[CREATE BOOK]", error);
 
     return {
       success: false,
-      message:
-        error instanceof Error ? error.message : "Database insert failed",
+      message: "An error occurred while creating the book",
     };
   }
 };
