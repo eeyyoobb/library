@@ -6,6 +6,17 @@ import { signOut } from "next-auth/react";
 
 import { Button } from "@/components/ui/button";
 
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp?: {
+        initData?: string;
+        platform?: string;
+      };
+    };
+  }
+}
+
 type SessionLike = {
   user?: {
     id?: string;
@@ -15,12 +26,19 @@ type SessionLike = {
 } | null;
 
 export function AuthActions({ session }: { session: SessionLike }) {
-  const [isTelegramEnvironment, setIsTelegramEnvironment] = useState(false);
+  const [isTelegram, setIsTelegram] = useState(false);
 
   useEffect(() => {
-    const telegram =
-      typeof window !== "undefined" ? window.Telegram?.WebApp : null;
-    setIsTelegramEnvironment(Boolean(telegram));
+    if (typeof window === "undefined") return;
+
+    // Telegram injects window.Telegram.WebApp into the webview.
+    // Checking for non-empty initData or a non-'unknown' platform confirms Telegram.
+    const webApp = window.Telegram?.WebApp;
+    const isInsideTelegram = Boolean(
+      webApp?.initData && webApp?.platform !== "unknown",
+    );
+
+    setIsTelegram(isInsideTelegram);
   }, []);
 
   if (session?.user) {
@@ -38,7 +56,8 @@ export function AuthActions({ session }: { session: SessionLike }) {
     );
   }
 
-  if (isTelegramEnvironment) {
+  // Hide sign-in/up buttons inside Telegram Mini App
+  if (isTelegram) {
     return null;
   }
 

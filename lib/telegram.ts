@@ -1,5 +1,6 @@
 "use server";
 
+import { signIn } from "@/auth";
 import { db } from "@/database/drizzle";
 import { users } from "@/database/schema";
 import { eq } from "drizzle-orm";
@@ -39,10 +40,17 @@ export async function authenticateTelegramUser(telegramUser: TelegramUserData) {
         telegramId: telegramId,
         fullName: fullName,
         email: email,
-        // Set default role/fields as needed by your schema
         role: "USER",
       })
       .returning();
+
+    await signIn("telegram", {
+      telegramId: telegramUser.id.toString(),
+      firstName: telegramUser.first_name,
+      lastName: telegramUser.last_name || "",
+      username: telegramUser.username || "",
+      redirect: false,
+    });
 
     return { success: true, user: newUser, isNewUser: true };
   } catch (error) {

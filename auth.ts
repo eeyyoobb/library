@@ -1,5 +1,3 @@
-// auth.ts
-
 import NextAuth, { User } from "next-auth";
 import { compare } from "bcryptjs";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -22,14 +20,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       name: "Credentials",
 
       credentials: {
-        email: {
-          label: "Email",
-          type: "email",
-        },
-        password: {
-          label: "Password",
-          type: "password",
-        },
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
       },
 
       async authorize(credentials) {
@@ -72,9 +64,61 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     // =====================================================
     // TELEGRAM MINI APP LOGIN
     // =====================================================
-    // =====================================================
-    // TELEGRAM MINI APP LOGIN
-    // =====================================================
+    CredentialsProvider({
+      id: "telegram",
+      name: "Telegram",
+
+      credentials: {
+        telegramId: { label: "Telegram ID", type: "text" },
+        firstName: { label: "First Name", type: "text" },
+        lastName: { label: "Last Name", type: "text" },
+        username: { label: "Username", type: "text" },
+      },
+
+      async authorize(credentials) {
+        const telegramId = credentials?.telegramId?.toString();
+        const firstName = credentials?.firstName?.toString();
+        const lastName = credentials?.lastName?.toString() || "";
+        const username = credentials?.username?.toString() || "";
+
+        if (!telegramId || !firstName) {
+          return null;
+        }
+
+        const email = `${username || `tg_${telegramId}`}@telegram.user`;
+        const fullName = [firstName, lastName].filter(Boolean).join(" ");
+
+        // 1. Check if user already exists by telegramId
+        const existingUsers = await db
+          .select()
+          .from(users)
+          .where(eq(users.telegramId, telegramId))
+          .limit(1);
+
+        let currentUser = existingUsers[0];
+
+        // 2. Create the user record in database if not found
+        if (!currentUser) {
+          const [newUser] = await db
+            .insert(users)
+            .values({
+              telegramId,
+              fullName,
+              email,
+              role: "USER",
+            })
+            .returning();
+
+          currentUser = newUser;
+        }
+
+        return {
+          id: currentUser.id.toString(),
+          email: currentUser.email ?? undefined,
+          name: currentUser.fullName,
+        } as User;
+      },
+    }),
   ],
 
   pages: {
