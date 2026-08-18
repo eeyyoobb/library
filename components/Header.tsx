@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
-import { auth, signOut } from "@/auth";
-import { Button } from "@/components/ui/button";
+import { auth } from "@/auth";
+import { AuthActions } from "@/components/AuthActions";
 
 const Header = async () => {
   const session = await auth();
@@ -14,27 +14,7 @@ const Header = async () => {
 
       <ul className="flex flex-row items-center gap-8">
         <li>
-          {session?.user ? (
-            <form
-              action={async () => {
-                "use server";
-                await signOut();
-              }}
-            >
-              <Button variant="outline">Logout</Button>
-            </form>
-          ) : (
-            <div className="flex flex-row gap-2">
-              <Button asChild>
-                <Link href="/sign-in">Sign In</Link>
-              </Button>
-              <Button className="bg-card-foreground border-primary border">
-                <Link href="/sign-up" className="text-primary">
-                  Sign up
-                </Link>
-              </Button>
-            </div>
-          )}
+          <AuthActions session={session} />
         </li>
       </ul>
     </header>
