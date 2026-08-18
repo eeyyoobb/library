@@ -23,17 +23,17 @@ export const BORROW_STATUS_ENUM = pgEnum("borrow_status", [
 
 export const users = pgTable("users", {
   id: uuid("id").notNull().primaryKey().defaultRandom().unique(),
-  fullName: varchar("full_name", { length: 255 }).notNull(),
+  fullName: varchar("full_name", { length: 255 }),
   email: text("email").notNull().unique(),
-  universityId: integer("university_id").notNull().unique(),
   password: text("password").notNull(),
-  universityCard: text("university_card").notNull(),
+  telegramUsername: text("university_card"),
   status: STATUS_ENUM("status").default("PENDING"),
   role: ROLE_ENUM("role").default("USER"),
   lastActivityDate: date("last_activity_date").defaultNow(),
   createdAt: timestamp("created_at", {
     withTimezone: true,
   }).defaultNow(),
+  telegramId: text("university_id").notNull().unique(),
 });
 
 export const books = pgTable("books", {

@@ -3,7 +3,7 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 import BookCoverSvg from "@/components/BookCoverSvg";
-import { IKImage } from "imagekitio-next";
+import { Image } from "@imagekit/next";
 import config from "@/lib/config";
 
 type BookCoverVariant = "extraSmall" | "small" | "medium" | "regular" | "wide";
@@ -19,7 +19,7 @@ const variantStyles: Record<BookCoverVariant, string> = {
 interface Props {
   className?: string;
   variant?: BookCoverVariant;
-  coverColor: string;
+  coverColor?: string;
   coverImage: string;
 }
 
@@ -27,8 +27,15 @@ const BookCover = ({
   className,
   variant = "regular",
   coverColor = "#012B48",
-  coverImage = "https://placehold.co/400x600.png",
+  coverImage,
 }: Props) => {
+  const imagePath = coverImage.startsWith("http")
+    ? new URL(coverImage).pathname.replace(/^\/[^/]+/, "")
+    : coverImage;
+
+  console.log("coverImage:", coverImage);
+  console.log("imagePath:", imagePath);
+
   return (
     <div
       className={cn(
@@ -41,19 +48,22 @@ const BookCover = ({
 
       <div
         className="absolute z-10"
-        style={{ left: "12%", width: "87.5%", height: "88%" }}
+        style={{
+          left: "12%",
+          width: "87.5%",
+          height: "88%",
+        }}
       >
-        <IKImage
-          path={coverImage}
+        <Image
           urlEndpoint={config.env.imagekit.urlEndpoint}
+          src={imagePath}
           alt="Book cover"
           fill
           className="rounded-sm object-fill"
-          loading="lazy"
-          lqip={{ active: true }}
         />
       </div>
     </div>
   );
 };
+
 export default BookCover;

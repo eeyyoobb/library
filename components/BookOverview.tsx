@@ -14,7 +14,6 @@ const BookOverview = async ({
   author,
   genre,
   rating,
-
   description,
   coverColor,
   coverUrl,

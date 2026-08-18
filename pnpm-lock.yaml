@@ -17,6 +17,9 @@ importers:
       '@hookform/resolvers':
         specifier: ^3.9.1
         version: 3.10.0(react-hook-form@7.85.0(react@19.2.8))
+      '@imagekit/next':
+        specifier: ^2.1.5
+        version: 2.1.5(next@16.3.1(@opentelemetry/api@1.9.0)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))
       '@neondatabase/serverless':
         specifier: ^0.10.4
         version: 0.10.4
@@ -32,6 +35,12 @@ importers:
       '@radix-ui/react-toast':
         specifier: ^1.2.4
         version: 1.2.23(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@twa-dev/sdk':
+        specifier: 7.0.0
+        version: 7.0.0(react@19.2.8)
+      '@twa-dev/types':
+        specifier: 7.10.0
+        version: 7.10.0
       '@upstash/qstash':
         specifier: ^2.11.3
         version: 2.11.3
@@ -68,9 +77,6 @@ importers:
       imagekit:
         specifier: ^6.0.0
         version: 6.0.0
-      imagekitio-next:
-        specifier: ^1.0.1
-        version: 1.0.1(next@16.3.1(@opentelemetry/api@1.9.0)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       jszip:
         specifier: ^3.10.1
         version: 3.10.1
@@ -638,6 +644,14 @@ packages:
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
 
+  '@imagekit/javascript@5.4.1':
+    resolution: {integrity: sha512-x29Yklu12sGtLh7aihSpmi6z09M+FJ+iWFSPZkq1b5ALf6pqZFUq49Rip9Y5qqn/KAxRz7bzmbV7APNIn9vq3A==}
+
+  '@imagekit/next@2.1.5':
+    resolution: {integrity: sha512-fvUEqAcq+krrMvn9Yb9fiq6q6ezbVuHvcvJJ606PzmaeBPFcsTU0FZAWW9TRr0cyj4i+4RfzurSy4GfK9RwjOg==}
+    peerDependencies:
+      next: '>= 13'
+
   '@img/colour@1.1.0':
     resolution: {integrity: sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ==}
     engines: {node: '>=18'}
@@ -1121,6 +1135,14 @@ packages:
 
   '@swc/helpers@0.5.23':
     resolution: {integrity: sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw==}
+
+  '@twa-dev/sdk@7.0.0':
+    resolution: {integrity: sha512-OZvqGGrdrgE0xU/IGjvsGKKouia5bTu6rA/BOOU6pJYLu776nQJs/HNFl7lwW16RONf1vvPqeV8XximsuzZ9Iw==}
+    peerDependencies:
+      react: '>=16.0.0'
+
+  '@twa-dev/types@7.10.0':
+    resolution: {integrity: sha512-BXHyNLXy+cPbOZ2qQq5ArPKcP4kUfuX3YBSFT0XUxtMNWAzvyMuYAiq59UTfQ8OnELXlfChrAoIT3c2pujBtcQ==}
 
   '@tybys/wasm-util@0.10.3':
     resolution: {integrity: sha512-F3fo1MYrRJYL3zER0OUOmkutjr1Vp23m7OsSgp7nq4SP6OqX6C/56XFIPAl5bt3zaBRjmW7SGz3u/6LwFpYcOg==}
@@ -2176,23 +2198,10 @@ packages:
     resolution: {integrity: sha512-BAg6QkE8W+TuQLrrw0Ugr7HegXduRuuj8/ti2kSOc+jz1dmx8/WNcjr6XGnq5YpDWxFwwaavqD0+jIUOKelTsw==}
     engines: {node: '>= 4'}
 
-  imagekit-javascript@3.1.0:
-    resolution: {integrity: sha512-56YmmOg6vKarIg4A41E9T08qQ2ri8862AYU/Ykhrbr9Cd8i6BIeKkroR16cmsNYFOIoLk35/O7b8o7I8DoyGaQ==}
-    deprecated: Please use @imagekit/javascript
-
   imagekit@6.0.0:
     resolution: {integrity: sha512-0MsxThZM2PYH6ngwN3zi9PDa8pCB5mEZG2FSySYiZk3Hfri8IMwUqVNzRlLQewBHQ3YtTN9M59O0Xe9HRewtOA==}
     engines: {node: '>=12.0.0'}
     deprecated: Please use @imagekit/nodejs
-
-  imagekitio-next@1.0.1:
-    resolution: {integrity: sha512-rUubuWG7EGMj14hD3sNBQrddh9wbLLIuyebmOaQTSV3GlKsMbbbBKD819zvnEf4HA/rhzCZY+1rKBh4ZxrimyA==}
-    engines: {node: '>=12'}
-    deprecated: Please use @imagekit/next
-    peerDependencies:
-      next: ^12 || ^13 || ^14 || ^15
-      react: ^16.13.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
-      react-dom: ^16.13.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   immediate@3.0.6:
     resolution: {integrity: sha512-XXOFtyqDjNDAQxVfYxuF7g9Il/IbWmmlQg2MYKOH8ExIT1qg6xc4zyS3HaEEATgs1btfzxq15ciUiY7gjSXRGQ==}
@@ -3666,6 +3675,13 @@ snapshots:
 
   '@humanwhocodes/retry@0.4.3': {}
 
+  '@imagekit/javascript@5.4.1': {}
+
+  '@imagekit/next@2.1.5(next@16.3.1(@opentelemetry/api@1.9.0)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))':
+    dependencies:
+      '@imagekit/javascript': 5.4.1
+      next: 16.3.1(@opentelemetry/api@1.9.0)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+
   '@img/colour@1.1.0':
     optional: true
 
@@ -4062,6 +4078,13 @@ snapshots:
   '@swc/helpers@0.5.23':
     dependencies:
       tslib: 2.8.1
+
+  '@twa-dev/sdk@7.0.0(react@19.2.8)':
+    dependencies:
+      '@twa-dev/types': 7.10.0
+      react: 19.2.8
+
+  '@twa-dev/types@7.10.0': {}
 
   '@tybys/wasm-util@0.10.3':
     dependencies:
@@ -5256,8 +5279,6 @@ snapshots:
 
   ignore@7.0.6: {}
 
-  imagekit-javascript@3.1.0: {}
-
   imagekit@6.0.0:
     dependencies:
       axios: 1.19.0
@@ -5269,13 +5290,6 @@ snapshots:
     transitivePeerDependencies:
       - debug
       - supports-color
-
-  imagekitio-next@1.0.1(next@16.3.1(@opentelemetry/api@1.9.0)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
-    dependencies:
-      imagekit-javascript: 3.1.0
-      next: 16.3.1(@opentelemetry/api@1.9.0)(@types/node@20.19.43)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      react: 19.2.8
-      react-dom: 19.2.8(react@19.2.8)
 
   immediate@3.0.6: {}
 
