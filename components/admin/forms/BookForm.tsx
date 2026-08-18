@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { X, Plus, BookOpen, Layers, Tag, Upload } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import {
   Form,
@@ -13,20 +14,25 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
-
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-
-import { useRouter } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import { bookSchema } from "@/lib/validations";
 import { createBook } from "@/lib/admin/actions/book";
-
 import FileUpload from "@/components/FileUpload";
 import ColorPicker from "@/components/admin/ColorPicker";
-
 import { toast } from "@/hooks/use-toast";
 import PdfUpload from "@/components/pdfUpload";
 
@@ -87,11 +93,62 @@ const TRADITION_OPTIONS = [
   { value: "other", label: "Other" },
 ];
 
-function parseList(value: string) {
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
+// Interactive Tag Input Component for Array Fields
+function TagInput({
+  value = [],
+  onChange,
+  placeholder,
+}: {
+  value: string[];
+  onChange: (tags: string[]) => void;
+  placeholder: string;
+}) {
+  const [inputValue, setInputValue] = useState("");
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if ((e.key === "Enter" || e.key === ",") && inputValue.trim()) {
+      e.preventDefault();
+      const newTag = inputValue.trim().replace(/^,|,$/g, "");
+      if (newTag && !value.includes(newTag)) {
+        onChange([...value, newTag]);
+      }
+      setInputValue("");
+    }
+  };
+
+  const removeTag = (indexToRemove: number) => {
+    onChange(value.filter((_, idx) => idx !== indexToRemove));
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2">
+        {value.map((tag, idx) => (
+          <Badge
+            key={idx}
+            variant="secondary"
+            className="flex items-center gap-1.5 px-3 py-1 text-sm bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-full transition-all"
+          >
+            <span>{tag}</span>
+            <button
+              type="button"
+              onClick={() => removeTag(idx)}
+              className="text-slate-400 hover:text-slate-700 focus:outline-none"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </Badge>
+        ))}
+      </div>
+      <Input
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        className="bg-slate-50/50 border-slate-200 focus:bg-white"
+      />
+    </div>
+  );
 }
 
 const BookForm = ({ type = "create", ...book }: Props) => {
@@ -100,10 +157,6 @@ const BookForm = ({ type = "create", ...book }: Props) => {
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  /**
-   * Generate the ID only once for this form instance.
-   */
   const [bookId] = useState(() => crypto.randomUUID());
 
   const form = useForm<BookFormValues>({
@@ -123,7 +176,7 @@ const BookForm = ({ type = "create", ...book }: Props) => {
       topics: (book as any).topics ?? [],
       audience: (book as any).audience ?? "general",
       tradition: (book as any).tradition ?? "christian",
-      coverColor: (book as any).coverColor ?? "",
+      coverColor: (book as any).coverColor ?? "#000000",
       summary: (book as any).summary ?? "",
     },
   });
@@ -135,9 +188,8 @@ const BookForm = ({ type = "create", ...book }: Props) => {
       toast({
         title: "Not implemented",
         description:
-          "Package replacement should be handled separately for book updates.",
+          "Package replacement should be handled separately for updates.",
       });
-
       return;
     }
 
@@ -147,89 +199,60 @@ const BookForm = ({ type = "create", ...book }: Props) => {
         description: "Please select a cover image.",
         variant: "destructive",
       });
-
       return;
     }
 
     if (!pdfFile) {
       toast({
         title: "PDF required",
-        description: "Please select the book PDF.",
+        description: "Please select the book PDF file.",
         variant: "destructive",
       });
-
       return;
     }
 
     if (values.translated && !values.translator?.trim()) {
       toast({
         title: "Translator required",
-        description: "Please enter the translator when the book is translated.",
+        description: "Please enter the translator name.",
         variant: "destructive",
       });
-
       return;
     }
 
     try {
       setIsSubmitting(true);
 
-      /**
-       * This is the manifest that will be placed
-       * inside the ZIP.
-       */
       const manifest = {
         schemaVersion: 1,
-
         id: bookId,
-
         title: values.title.trim(),
         description: values.description?.trim() ?? "",
         author: values.author.trim(),
-
         genre: values.genre?.trim() || "spiritual",
-
         category: values.category,
         subcategory: values.subcategory?.trim() ?? "",
-
         language: values.language,
-
         translated: values.translated,
-
         ...(values.translated
-          ? {
-              translator: values.translator?.trim() ?? "",
-            }
+          ? { translator: values.translator?.trim() ?? "" }
           : {}),
-
         rating: Number(values.rating),
-
         keywords: values.keywords ?? [],
         topics: values.topics ?? [],
-
         audience: values.audience,
         tradition: values.tradition,
-
         summary: values.summary?.trim() ?? "",
-
         coverColor: values.coverColor ?? "",
-
         files: {
           cover: "cover.jpg",
           pdf: "book.pdf",
         },
       };
 
-      console.log("[BOOK] Manifest:", manifest);
-
-      /**
-       * Send metadata + actual files to Next.js.
-       */
       const formData = new FormData();
-
       formData.append("id", bookId);
       formData.append("manifest", JSON.stringify(manifest));
-
       formData.append("cover", coverFile);
       formData.append("pdf", pdfFile);
 
@@ -244,10 +267,6 @@ const BookForm = ({ type = "create", ...book }: Props) => {
         throw new Error(packageResult.error || "Failed to create book package");
       }
 
-      /**
-       * Save database record only after
-       * the ZIP was successfully uploaded.
-       */
       const result = await createBook({
         ...values,
         id: bookId,
@@ -261,14 +280,13 @@ const BookForm = ({ type = "create", ...book }: Props) => {
 
       toast({
         title: "Success",
-        description: "Book package uploaded and book created successfully.",
+        description: "Book package uploaded and created successfully.",
       });
 
-      router.push("/admin");
+      router.push("/dashboard");
       router.refresh();
     } catch (error) {
       console.error("[BOOK] Creation failed:", error);
-
       toast({
         title: "Error",
         description:
@@ -282,403 +300,447 @@ const BookForm = ({ type = "create", ...book }: Props) => {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        {/* TITLE */}
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Book Title</FormLabel>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="mx-auto max-w-5xl space-y-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10"
+      >
+        {/* Section 1: Basic Overview */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-3 text-slate-800">
+            <BookOpen className="h-5 w-5 text-indigo-600" />
+            <h3 className="text-lg font-semibold">Basic Details</h3>
+          </div>
 
-              <FormControl>
-                <Input
-                  required
-                  placeholder="Book title"
-                  {...field}
-                  className="book-form_input"
-                />
-              </FormControl>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-medium text-slate-700">
+                    Book Title
+                  </FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Purpose Driven Life" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+            <FormField
+              control={form.control}
+              name="author"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-medium text-slate-700">
+                    Author
+                  </FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Rick Warren" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
-        {/* AUTHOR */}
-        <FormField
-          control={form.control}
-          name="author"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Author</FormLabel>
+          {/* Translation Checkbox & Translator Field */}
+          <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 space-y-4">
+            <FormField
+              control={form.control}
+              name="translated"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormLabel className="font-normal text-slate-700 cursor-pointer">
+                    This book is translated from another language
+                  </FormLabel>
+                </FormItem>
+              )}
+            />
 
-              <FormControl>
-                <Input
-                  required
-                  placeholder="Book author"
-                  {...field}
-                  className="book-form_input"
-                />
-              </FormControl>
+            {translated && (
+              <FormField
+                control={form.control}
+                name="translator"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-medium text-slate-700">
+                      Translator Name
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter translator's name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+          </div>
+        </div>
 
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Section 2: Classification */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-3 text-slate-800">
+            <Layers className="h-5 w-5 text-indigo-600" />
+            <h3 className="text-lg font-semibold">Classification & Audience</h3>
+          </div>
 
-        {/* LANGUAGE */}
-        <FormField
-          control={form.control}
-          name="language"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Language</FormLabel>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-medium text-slate-700">
+                    Category
+                  </FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {CATEGORY_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              <FormControl>
-                <select {...field} className="book-form_input">
-                  {LANGUAGE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </FormControl>
+            <FormField
+              control={form.control}
+              name="subcategory"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-medium text-slate-700">
+                    Subcategory
+                  </FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Interpretation" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+            <FormField
+              control={form.control}
+              name="genre"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-medium text-slate-700">
+                    Genre
+                  </FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Spiritual" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        {/* TRANSLATED */}
-        <FormField
-          control={form.control}
-          name="translated"
-          render={({ field }) => (
-            <FormItem>
-              <div className="flex items-center gap-3">
-                <FormControl>
-                  <input
-                    type="checkbox"
-                    checked={field.value}
-                    onChange={field.onChange}
-                  />
-                </FormControl>
+            <FormField
+              control={form.control}
+              name="language"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-medium text-slate-700">
+                    Language
+                  </FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select language" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {LANGUAGE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-                <FormLabel>This book is translated</FormLabel>
-              </div>
+            <FormField
+              control={form.control}
+              name="audience"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-medium text-slate-700">
+                    Target Audience
+                  </FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select audience" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {AUDIENCE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+            <FormField
+              control={form.control}
+              name="tradition"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-medium text-slate-700">
+                    Tradition
+                  </FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select tradition" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {TRADITION_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
 
-        {/* TRANSLATOR */}
-        {translated && (
+        {/* Section 3: Tags & Metadata */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-3 text-slate-800">
+            <Tag className="h-5 w-5 text-indigo-600" />
+            <h3 className="text-lg font-semibold">Keywords & Content</h3>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="keywords"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-medium text-slate-700">
+                    Keywords Array
+                  </FormLabel>
+                  <FormControl>
+                    <TagInput
+                      value={field.value || []}
+                      onChange={field.onChange}
+                      placeholder="Type keyword and press Enter..."
+                    />
+                  </FormControl>
+                  <FormDescription className="text-xs">
+                    Press Enter or comma to create array items.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="topics"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-medium text-slate-700">
+                    Topics Array
+                  </FormLabel>
+                  <FormControl>
+                    <TagInput
+                      value={field.value || []}
+                      onChange={field.onChange}
+                      placeholder="Type topic and press Enter..."
+                    />
+                  </FormControl>
+                  <FormDescription className="text-xs">
+                    Press Enter or comma to create array items.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <FormField
+              control={form.control}
+              name="rating"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-medium text-slate-700">
+                    Initial Rating (0-5)
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={5}
+                      step={0.1}
+                      {...field}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="coverColor"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="font-medium text-slate-700">
+                    Primary Theme Color
+                  </FormLabel>
+                  <FormControl>
+                    <ColorPicker
+                      onPickerChange={field.onChange}
+                      value={field.value}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
           <FormField
             control={form.control}
-            name="translator"
+            name="summary"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Translator</FormLabel>
-
+                <FormLabel className="font-medium text-slate-700">
+                  Short Summary
+                </FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="Translator name"
+                  <Textarea
+                    placeholder="Brief overview of the main takeaways..."
+                    rows={3}
                     {...field}
-                    className="book-form_input"
                   />
                 </FormControl>
-
                 <FormMessage />
               </FormItem>
             )}
           />
-        )}
 
-        {/* CATEGORY */}
-        <FormField
-          control={form.control}
-          name="category"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Category</FormLabel>
-
-              <FormControl>
-                <select {...field} className="book-form_input">
-                  {CATEGORY_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </FormControl>
-
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* SUBCATEGORY */}
-        <FormField
-          control={form.control}
-          name="subcategory"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Subcategory</FormLabel>
-
-              <FormControl>
-                <Input
-                  placeholder="e.g. Bible Interpretation"
-                  {...field}
-                  className="book-form_input"
-                />
-              </FormControl>
-
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* GENRE */}
-        <FormField
-          control={form.control}
-          name="genre"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Genre</FormLabel>
-
-              <FormControl>
-                <Input
-                  placeholder="e.g. Spiritual, Biography"
-                  {...field}
-                  className="book-form_input"
-                />
-              </FormControl>
-
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* AUDIENCE */}
-        <FormField
-          control={form.control}
-          name="audience"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Audience</FormLabel>
-
-              <FormControl>
-                <select {...field} className="book-form_input">
-                  {AUDIENCE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </FormControl>
-
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* TRADITION */}
-        <FormField
-          control={form.control}
-          name="tradition"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Christian Tradition</FormLabel>
-
-              <FormControl>
-                <select {...field} className="book-form_input">
-                  {TRADITION_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </FormControl>
-
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* RATING */}
-        <FormField
-          control={form.control}
-          name="rating"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Rating</FormLabel>
-
-              <FormControl>
-                <Input
-                  type="number"
-                  min={0}
-                  max={5}
-                  step={0.1}
-                  {...field}
-                  onChange={(e) => field.onChange(Number(e.target.value))}
-                  className="book-form_input"
-                />
-              </FormControl>
-
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* KEYWORDS */}
-        <FormField
-          control={form.control}
-          name="keywords"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Keywords</FormLabel>
-
-              <FormControl>
-                <Input
-                  placeholder="faith, prayer, bible, grace"
-                  value={field.value?.join(", ") ?? ""}
-                  onChange={(e) => field.onChange(parseList(e.target.value))}
-                  className="book-form_input"
-                />
-              </FormControl>
-
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* TOPICS */}
-        <FormField
-          control={form.control}
-          name="topics"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Topics</FormLabel>
-
-              <FormControl>
-                <Input
-                  placeholder="Faith, Prayer, Salvation"
-                  value={field.value?.join(", ") ?? ""}
-                  onChange={(e) => field.onChange(parseList(e.target.value))}
-                  className="book-form_input"
-                />
-              </FormControl>
-
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* COVER */}
-        <FormItem>
-          <FormLabel>Book Cover</FormLabel>
-
-          <FileUpload
-            type="image"
-            accept="image/*"
-            placeholder="Upload a book cover"
-            variant="light"
-            onFileSelect={setCoverFile}
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="font-medium text-slate-700">
+                  Full Description
+                </FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Detailed description..."
+                    rows={6}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
+        </div>
 
-          {!coverFile && (
-            <p className="text-sm text-red-500">Cover image is required.</p>
-          )}
-        </FormItem>
+        {/* Section 4: File Uploads */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-3 text-slate-800">
+            <Upload className="h-5 w-5 text-indigo-600" />
+            <h3 className="text-lg font-semibold">Media & Asset Package</h3>
+          </div>
 
-        {/* COVER COLOR */}
-        <FormField
-          control={form.control}
-          name="coverColor"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Primary Color</FormLabel>
-
-              <FormControl>
-                <ColorPicker
-                  onPickerChange={field.onChange}
-                  value={field.value}
-                />
-              </FormControl>
-
-              <FormMessage />
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <FormItem className="rounded-xl border border-dashed border-slate-200 p-4 bg-slate-50/50">
+              <FormLabel className="font-medium text-slate-700">
+                Book Cover Image
+              </FormLabel>
+              <FileUpload
+                type="image"
+                accept="image/*"
+                placeholder="Upload cover image"
+                variant="light"
+                onFileSelect={setCoverFile}
+              />
+              {!coverFile && (
+                <p className="mt-2 text-xs text-rose-500 font-medium">
+                  Cover image required.
+                </p>
+              )}
             </FormItem>
-          )}
-        />
 
-        {/* DESCRIPTION */}
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Book Description</FormLabel>
-
-              <FormControl>
-                <Textarea
-                  placeholder="Book description"
-                  {...field}
-                  rows={8}
-                  className="book-form_input"
-                />
-              </FormControl>
-
-              <FormMessage />
+            <FormItem className="rounded-xl border border-dashed border-slate-200 p-4 bg-slate-50/50">
+              <FormLabel className="font-medium text-slate-700">
+                Book PDF Document
+              </FormLabel>
+              <PdfUpload
+                type="pdf"
+                accept="application/pdf"
+                placeholder="Upload PDF document"
+                variant="light"
+                onFileSelect={setPdfFile}
+              />
+              {!pdfFile && (
+                <p className="mt-2 text-xs text-rose-500 font-medium">
+                  PDF file required.
+                </p>
+              )}
             </FormItem>
-          )}
-        />
+          </div>
+        </div>
 
-        {/* SUMMARY */}
-        <FormField
-          control={form.control}
-          name="summary"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Book Summary</FormLabel>
-
-              <FormControl>
-                <Textarea
-                  placeholder="Short summary"
-                  {...field}
-                  rows={5}
-                  className="book-form_input"
-                />
-              </FormControl>
-
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* PDF */}
-        <FormItem>
-          <FormLabel>Book PDF</FormLabel>
-
-          <PdfUpload
-            type="pdf"
-            accept="application/pdf"
-            placeholder="Upload a PDF file"
-            variant="light"
-            onFileSelect={setPdfFile}
-          />
-
-          {!pdfFile && <p className="text-sm text-red-500">PDF is required.</p>}
-        </FormItem>
-
-        {/* SUBMIT */}
         <Button
           type="submit"
           disabled={isSubmitting || !coverFile || !pdfFile}
-          className="book-form_btn text-white"
+          className="w-full bg-slate-900 py-6 text-base font-medium hover:bg-slate-800 text-white rounded-xl shadow-md transition-all"
         >
-          {isSubmitting ? "Creating Book Package..." : "Add Book to Library"}
+          {isSubmitting
+            ? "Generating Package & Creating..."
+            : "Publish Book to Library"}
         </Button>
       </form>
     </Form>

@@ -23,10 +23,9 @@ const Home = async () => {
 
   return (
     <>
+      <TelegramAuth />
       {/* Only does something when opened inside Telegram */}
       <BookOverview {...latestBooks[0]} userId={session?.user?.id as string} />
-      <TelegramAuth />
-      <div>No telegarm available.</div>;
       <BookList
         title="Latest Books"
         books={latestBooks.slice(1)}

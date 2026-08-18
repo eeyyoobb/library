@@ -29,14 +29,14 @@ const BorrowBook = ({
   const [copied, setCopied] = useState(false);
 
   const handleBorrowBook = async () => {
-    // if (!isEligible) {
-    //   toast({
-    //     title: "Cannot borrow",
-    //     description: message,
-    //     variant: "destructive",
-    //   });
-    //   return;
-    // }
+    if (!isEligible) {
+      toast({
+        title: "Cannot borrow",
+        description: message,
+        variant: "destructive",
+      });
+      return;
+    }
 
     setBorrowing(true);
     setCopied(false);
@@ -110,9 +110,9 @@ const BorrowBook = ({
   return (
     <div className="flex flex-col gap-2">
       <Button
-        className="book-overview_btn flex items-center justify-center gap-2"
+        className={` book-overview_btn flex items-center justify-center gap-2`}
         onClick={handleBorrowBook}
-        disabled={borrowing}
+        disabled={!isEligible}
       >
         <Image src="/icons/book.svg" alt="book" width={20} height={20} />
 
@@ -120,6 +120,9 @@ const BorrowBook = ({
           {borrowing ? "Borrowing..." : "Borrow Book"}
         </p>
       </Button>
+      {!isEligible && (
+        <div className="text-yellow-400">Try increase your qoata!</div>
+      )}
 
       {downloadUrl && (
         <div className="flex flex-col gap-2 p-3 bg-slate-800 rounded-md">

@@ -1,8 +1,8 @@
 "use server";
 
 import { db } from "@/database/drizzle";
-import { books, borrowRecords } from "@/database/schema";
-import { eq } from "drizzle-orm";
+import { books, borrowRecords, users } from "@/database/schema";
+import { and, eq, gt, lt, sql } from "drizzle-orm";
 import dayjs from "dayjs";
 
 const BOOKS_DOMAIN = process.env.BOOKS_DOMAIN || "https://bookwfw.net";
@@ -11,6 +11,7 @@ export const borrowBook = async (params: BorrowBookParams) => {
   const { userId, bookId } = params;
 
   try {
+    // 1. Get book
     const [book] = await db
       .select({
         id: books.id,
@@ -35,6 +36,33 @@ export const borrowBook = async (params: BorrowBookParams) => {
       };
     }
 
+    // 2. Atomically consume ONE quota
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        downloads: sql`${users.downloads} + 1`,
+      })
+      .where(
+        and(
+          eq(users.id, userId),
+          lt(users.downloads, users.quota), // Ensures downloads < quota before incrementing
+        ),
+      )
+      .returning({
+        id: users.id,
+        downloads: users.downloads,
+        quota: users.quota,
+      });
+
+    // 3. No quota available
+    if (!updatedUser) {
+      return {
+        success: false,
+        error: " You have reached your download quota limit.",
+      };
+    }
+
+    // 4. Create borrowing record
     const dueDate = dayjs().add(7, "day").toDate().toDateString();
 
     const [record] = await db
@@ -47,8 +75,7 @@ export const borrowBook = async (params: BorrowBookParams) => {
       })
       .returning();
 
-    // Example:
-    // f75b8280-2d35-4889-a10c-cf9c08e737af-20260817
+    // 5. Generate download URL
     const now = dayjs();
 
     const day = now.date();
@@ -64,6 +91,7 @@ export const borrowBook = async (params: BorrowBookParams) => {
       success: true,
       downloadUrl: publicBookUrl,
       fileName: `${book.id}.zip`,
+      downloads: updatedUser.downloads,
       data: JSON.parse(JSON.stringify(record)),
     };
   } catch (error) {

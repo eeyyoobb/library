@@ -8,6 +8,7 @@ import {
   pgEnum,
   timestamp,
   boolean,
+  numeric,
 } from "drizzle-orm/pg-core";
 
 export const STATUS_ENUM = pgEnum("status", [
@@ -30,7 +31,7 @@ export const users = pgTable("users", {
   password: text("password"),
 
   telegramId: text("telegram_id").unique(),
-
+  downloads: integer("downloads"),
   telegramUsername: varchar("telegram_username", {
     length: 255,
   }),
@@ -40,7 +41,7 @@ export const users = pgTable("users", {
   role: ROLE_ENUM("role").default("USER").notNull(),
 
   lastActivityDate: date("last_activity_date").defaultNow(),
-
+  quota: integer("qoata"),
   createdAt: timestamp("created_at", {
     withTimezone: true,
   }).defaultNow(),
@@ -48,19 +49,13 @@ export const users = pgTable("users", {
 
 export const books = pgTable("books", {
   id: uuid("id").primaryKey().defaultRandom(),
-
   title: varchar("title", { length: 255 }).notNull(),
-
   author: varchar("author", { length: 255 }).notNull(),
-
   genre: text("genre").notNull().default("spiritual"),
-
   category: varchar("category", { length: 100 }).notNull(),
-
   subcategory: varchar("subcategory", {
     length: 100,
   }),
-
   language: varchar("language", {
     length: 20,
   })
@@ -126,4 +121,12 @@ export const borrowRecords = pgTable("borrow_records", {
   returnDate: date("return_date"),
   status: BORROW_STATUS_ENUM("status").default("BORROWED").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
+export const searches = pgTable("searches", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: varchar("user_id").notNull(),
+  request: varchar("request", { length: 500 }).notNull(),
+  found: boolean("found").default(false).notNull(),
+  date: timestamp("date", { withTimezone: true }).defaultNow().notNull(),
 });

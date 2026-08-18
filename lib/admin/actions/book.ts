@@ -2,9 +2,20 @@
 
 import { books } from "@/database/schema";
 import { db } from "@/database/drizzle";
+import { auth } from "@/auth";
 
 export const createBook = async (params: BookParams) => {
   try {
+    const session = await auth();
+
+    if (!session?.user?.id) {
+      return {
+        success: false,
+        message: "You must be authenticated to create a book.",
+      };
+    }
+
+    const userId = session.user.id;
     const newBook = await db
       .insert(books)
       .values({
@@ -26,8 +37,8 @@ export const createBook = async (params: BookParams) => {
         description: params.description,
         summary: params.summary,
         packageUrl: params.packageUrl,
-        uploader: params.uploader,
         coverUrl: params.coverUrl,
+        uploader: userId,
       })
       .returning();
 

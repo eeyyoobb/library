@@ -15,17 +15,21 @@ type SessionLike = {
   } | null;
 } | null;
 
-export function AuthActions({ session }: { session: SessionLike }) {
+export function AuthActions({
+  session,
+  role,
+}: {
+  session: SessionLike;
+  role: string;
+}) {
   const [isTelegram, setIsTelegram] = useState(false);
 
   useEffect(() => {
-    // Initial check
     if (checkIsTelegram()) {
       setIsTelegram(true);
       return;
     }
 
-    // Fallback polling for production WebView script injection
     const interval = setInterval(() => {
       if (checkIsTelegram()) {
         setIsTelegram(true);
@@ -43,20 +47,37 @@ export function AuthActions({ session }: { session: SessionLike }) {
 
   if (session?.user) {
     return (
-      <form
-        onSubmit={async (event) => {
-          event.preventDefault();
-          await signOut({ callbackUrl: "/" });
-        }}
-      >
-        <Button type="submit" variant="outline">
-          Logout
-        </Button>
-      </form>
+      <div className="flex items-center gap-2">
+        {role === "ADMIN" ? (
+          <Button asChild className="bg-card-foreground border-primary border">
+            <Link href="/admin" className="text-primary">
+              Dashboard
+            </Link>
+          </Button>
+        ) : (
+          <Button asChild className="bg-card-foreground border-primary border">
+            <Link href="/dashboard" className="text-primary">
+              Dashboard
+            </Link>
+          </Button>
+        )}
+
+        {!isTelegram && (
+          <form
+            onSubmit={async (event) => {
+              event.preventDefault();
+              await signOut({ callbackUrl: "/" });
+            }}
+          >
+            <Button type="submit" variant="outline">
+              Logout
+            </Button>
+          </form>
+        )}
+      </div>
     );
   }
 
-  // Hide sign-in/up buttons inside Telegram Mini App
   if (isTelegram) {
     return null;
   }
@@ -66,7 +87,7 @@ export function AuthActions({ session }: { session: SessionLike }) {
       <Button asChild>
         <Link href="/sign-in">Sign In</Link>
       </Button>
-      <Button className="bg-card-foreground border-primary border">
+      <Button asChild className="bg-card-foreground border-primary border">
         <Link href="/sign-up" className="text-primary">
           Sign up
         </Link>

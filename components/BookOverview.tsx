@@ -27,19 +27,17 @@ const BookOverview = async ({
     .limit(1);
 
   const borrowingEligibility = {
-    isEligible: 5 > 0 && user?.status === "APPROVED",
+    isEligible: Number(user?.quota ?? 0) > 0,
     message:
       5 <= 0
         ? "Book is not available"
         : "You are not eligible to borrow this book",
   };
+
   return (
     <section className="book-overview">
       <div className="flex flex-1 flex-col gap-5">
-        <h1>
-          {title}
-          {userId}
-        </h1>
+        <h1>{title}</h1>
 
         <div className="book-info">
           <p>

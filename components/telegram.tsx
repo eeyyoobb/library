@@ -17,14 +17,14 @@ interface TelegramAuthProps {
 }
 
 // Mock Telegram user for local development
-const MOCK_TELEGRAM_USER: UserData = {
-  id: 999999999,
-  first_name: "Dev",
-  last_name: "User",
-  username: "dev_tester",
-  language_code: "en",
-  is_premium: true,
-};
+// const MOCK_TELEGRAM_USER: UserData = {
+//   id: 999999999,
+//   first_name: "Dev",
+//   last_name: "User",
+//   username: "dev_tester",
+//   language_code: "en",
+//   is_premium: true,
+// };
 
 export default function TelegramAuth({ onAuthenticated }: TelegramAuthProps) {
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -39,16 +39,16 @@ export default function TelegramAuth({ onAuthenticated }: TelegramAuthProps) {
       let user: UserData | undefined;
 
       // 1. Check for local development environment
-      if (process.env.NODE_ENV === "development") {
-        setIsTelegramEnv(true);
-        user = MOCK_TELEGRAM_USER;
-      } else {
-        // 2. Production: Use actual Telegram WebApp SDK
-        const WebApp = (await import("@twa-dev/sdk")).default;
-        WebApp.ready();
-        user = WebApp.initDataUnsafe?.user as UserData | undefined;
-        if (user) setIsTelegramEnv(true);
-      }
+      // if (process.env.NODE_ENV === "development") {
+      //   setIsTelegramEnv(true);
+      //   user = MOCK_TELEGRAM_USER;
+      // } else {
+      // 2. Production: Use actual Telegram WebApp SDK
+      const WebApp = (await import("@twa-dev/sdk")).default;
+      WebApp.ready();
+      user = WebApp.initDataUnsafe?.user as UserData | undefined;
+      if (user) setIsTelegramEnv(true);
+      // }
 
       if (user) {
         setUserData(user);
