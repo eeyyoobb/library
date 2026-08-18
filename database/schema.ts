@@ -16,13 +16,10 @@ export const STATUS_ENUM = pgEnum("status", [
   "REJECTED",
 ]);
 export const ROLE_ENUM = pgEnum("role", ["USER", "ADMIN"]);
-export const BORROW_STATUS_ENUM = pgEnum("borrow_status", [
-  "BORROWED",
-  "RETURNED",
-]);
+export const BORROW_STATUS_ENUM = pgEnum("status", ["BORROWED", "RETURNED"]);
 
 export const users = pgTable("users", {
-  id: uuid("id").notNull().primaryKey().defaultRandom().unique(),
+  id: uuid("id").primaryKey().defaultRandom(),
 
   fullName: varchar("full_name", {
     length: 255,
@@ -32,7 +29,7 @@ export const users = pgTable("users", {
 
   password: text("password"),
 
-  telegramId: text("telegram_id"),
+  telegramId: text("telegram_id").unique(),
 
   telegramUsername: varchar("telegram_username", {
     length: 255,
@@ -50,7 +47,7 @@ export const users = pgTable("users", {
 });
 
 export const books = pgTable("books", {
-  id: uuid("id").primaryKey().defaultRandom().notNull().unique(),
+  id: uuid("id").primaryKey().defaultRandom(),
 
   title: varchar("title", { length: 255 }).notNull(),
 

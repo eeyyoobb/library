@@ -1,125 +1,50 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import WebApp from "@twa-dev/sdk";
-
-interface UserData {
-  id: number;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  language_code?: string;
-  is_premium?: boolean;
-  photo_url?: string;
-}
+import { authenticateTelegramUser } from "@/lib/actions/auth";
 
 export default function TelegramAuth() {
   const router = useRouter();
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [checking, setChecking] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function authenticate() {
+    async function initAuth() {
       try {
-        /*
-         * Initialize Telegram Mini App
-         */
         WebApp.ready();
         WebApp.expand();
 
-        /*
-         * Check whether Telegram actually provided
-         * authentication data.
-         */
         const initData = WebApp.initData;
 
+        // Skip if running outside Telegram
         if (!initData) {
-          // Normal browser / not running as Mini App
-          setChecking(false);
+          setLoading(false);
           return;
         }
 
-        /*
-         * This is safe for DISPLAYING the user.
-         *
-         * Do NOT use this as authentication proof.
-         */
-        const telegramUser = WebApp.initDataUnsafe?.user;
+        // Send initData directly to server action to handle Neon DB + NextAuth session
+        const result = await authenticateTelegramUser(initData);
 
-        if (telegramUser) {
-          setUserData(telegramUser as UserData);
-        }
-
-        console.log("[TelegramAuth] Telegram Mini App detected");
-
-        /*
-         * Send the signed initData to NextAuth.
-         *
-         * The server validates it using TELEGRAM_BOT_TOKEN.
-         */
-        const result = await signIn("telegram", {
-          initData,
-          redirect: false,
-        });
-
-        if (result?.ok) {
-          console.log("[TelegramAuth] Login successful");
-
+        if (result.success) {
           router.refresh();
-
-          return;
         }
-
-        console.error("[TelegramAuth] Login failed:", result?.error);
-      } catch (error) {
-        console.error("[TelegramAuth] Error:", error);
+      } catch (err) {
+        console.error("Telegram authentication error:", err);
       } finally {
-        setChecking(false);
+        setLoading(false);
       }
     }
 
-    authenticate();
+    initAuth();
   }, [router]);
 
-  /*
-   * Normal browser:
-   * Telegram doesn't exist, so this component
-   * disappears and your normal page continues.
-   */
-  if (!checking) {
-    return null;
-  }
+  if (!loading) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50">
-      <div className="min-w-[280px] rounded-xl bg-black p-6 text-white shadow-xl">
-        {userData ? (
-          <>
-            <h1 className="mb-4 text-xl font-bold">Telegram Login</h1>
-
-            <div className="space-y-1 text-sm">
-              <p>ID: {userData.id}</p>
-
-              <p>First Name: {userData.first_name}</p>
-
-              <p>Last Name: {userData.last_name || "N/A"}</p>
-
-              <p>Username: {userData.username || "N/A"}</p>
-
-              <p>Language: {userData.language_code}</p>
-
-              <p>Premium: {userData.is_premium ? "Yes" : "No"}</p>
-            </div>
-
-            <p className="mt-5 text-center text-sm text-white/60">
-              Signing in...
-            </p>
-          </>
-        ) : (
-          <p>Connecting to Telegram...</p>
-        )}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 text-white">
+      <div className="rounded-lg bg-zinc-900 p-6 text-center">
+        <p className="animate-pulse text-sm">Authenticating with Telegram...</p>
       </div>
     </div>
   );

@@ -36,6 +36,27 @@
       "when": 1787036631846,
       "tag": "0004_groovy_mephisto",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787037622095,
+      "tag": "0005_acoustic_quasimodo",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787038710728,
+      "tag": "0006_needy_inertia",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787038778121,
+      "tag": "0007_powerful_puff_adder",
+      "breakpoints": true
     }
   ]
 }
