@@ -58,3 +58,41 @@ export async function authenticateTelegramUser(telegramUser: TelegramUserData) {
     return { success: false, message: "Authentication failed." };
   }
 }
+
+// lib/is-telegram.ts
+
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp?: {
+        initData?: string;
+        platform?: string;
+        initDataUnsafe?: {
+          user?: unknown;
+        };
+      };
+    };
+  }
+}
+
+export function checkIsTelegram(): boolean {
+  if (typeof window === "undefined") return false;
+
+  // 1. Development mode override
+  if (process.env.NODE_ENV === "development") {
+    return true;
+  }
+
+  // 2. Direct WebApp object check
+  const webApp = window.Telegram?.WebApp;
+  if (webApp?.initData || (webApp?.platform && webApp.platform !== "unknown")) {
+    return true;
+  }
+
+  // 3. Telegram WebApp URL hash detection (fallback for slow SDK loads)
+  if (window.location.hash.includes("tgWebAppData=")) {
+    return true;
+  }
+
+  return false;
+}

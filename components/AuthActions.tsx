@@ -5,17 +5,7 @@ import { useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
 
 import { Button } from "@/components/ui/button";
-
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp?: {
-        initData?: string;
-        platform?: string;
-      };
-    };
-  }
-}
+import { checkIsTelegram } from "@/lib/telegram";
 
 type SessionLike = {
   user?: {
@@ -29,16 +19,26 @@ export function AuthActions({ session }: { session: SessionLike }) {
   const [isTelegram, setIsTelegram] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    // Initial check
+    if (checkIsTelegram()) {
+      setIsTelegram(true);
+      return;
+    }
 
-    // Telegram injects window.Telegram.WebApp into the webview.
-    // Checking for non-empty initData or a non-'unknown' platform confirms Telegram.
-    const webApp = window.Telegram?.WebApp;
-    const isInsideTelegram = Boolean(
-      webApp?.initData && webApp?.platform !== "unknown",
-    );
+    // Fallback polling for production WebView script injection
+    const interval = setInterval(() => {
+      if (checkIsTelegram()) {
+        setIsTelegram(true);
+        clearInterval(interval);
+      }
+    }, 100);
 
-    setIsTelegram(isInsideTelegram);
+    const timeout = setTimeout(() => clearInterval(interval), 2000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
   }, []);
 
   if (session?.user) {
