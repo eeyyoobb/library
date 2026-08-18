@@ -23,17 +23,30 @@ export const BORROW_STATUS_ENUM = pgEnum("borrow_status", [
 
 export const users = pgTable("users", {
   id: uuid("id").notNull().primaryKey().defaultRandom().unique(),
-  fullName: varchar("full_name", { length: 255 }).notNull(),
-  email: text("email").notNull().unique(),
-  password: text("password").notNull(),
-  telegramUsername: text("university_card"),
-  status: STATUS_ENUM("status").default("PENDING"),
-  role: ROLE_ENUM("role").default("USER"),
+
+  fullName: varchar("full_name", {
+    length: 255,
+  }).notNull(),
+
+  email: text("email").unique(),
+
+  password: text("password"),
+
+  telegramId: text("telegram_id"),
+
+  telegramUsername: varchar("telegram_username", {
+    length: 255,
+  }),
+
+  status: STATUS_ENUM("status").default("PENDING").notNull(),
+
+  role: ROLE_ENUM("role").default("USER").notNull(),
+
   lastActivityDate: date("last_activity_date").defaultNow(),
+
   createdAt: timestamp("created_at", {
     withTimezone: true,
   }).defaultNow(),
-  telegramId: text("university_id").notNull().unique(),
 });
 
 export const books = pgTable("books", {

@@ -73,6 +73,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     // =====================================================
     // TELEGRAM MINI APP LOGIN
     // =====================================================
+    // =====================================================
+    // TELEGRAM MINI APP LOGIN
+    // =====================================================
     CredentialsProvider({
       id: "telegram",
       name: "Telegram",
@@ -91,83 +94,74 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
-        // Server-side Telegram verification
-        const telegramUser = await validateTelegramInitData(initData);
+        try {
+          const telegramUser = await validateTelegramInitData(initData);
 
-        const telegramId = String(telegramUser.id);
+          const telegramId = String(telegramUser.id);
 
-        // Check whether this Telegram account
-        // already belongs to a BookWise user.
-        const existing = await db
-          .select()
-          .from(users)
-          .where(eq(users.telegramId, telegramId))
-          .limit(1);
+          const fullName = [telegramUser.first_name, telegramUser.last_name]
+            .filter(Boolean)
+            .join(" ");
 
-        if (existing.length > 0) {
-          const user = existing[0];
+          // Find Telegram account
+          const existing = await db
+            .select()
+            .from(users)
+            .where(eq(users.telegramId, telegramId))
+            .limit(1);
 
-          // Keep Telegram profile information updated.
-          const updated = await db
-            .update(users)
-            .set({
-              fullName: [telegramUser.first_name, telegramUser.last_name]
-                .filter(Boolean)
-                .join(" "),
+          // Existing user -> update and sign in
+          if (existing.length > 0) {
+            const user = existing[0];
 
+            const updated = await db
+              .update(users)
+              .set({
+                fullName,
+                telegramUsername: telegramUser.username ?? null,
+              })
+              .where(eq(users.id, user.id))
+              .returning();
+
+            const updatedUser = updated[0] ?? user;
+
+            return {
+              id: updatedUser.id.toString(),
+              email: updatedUser.email ?? undefined,
+              name: updatedUser.fullName,
+            } as User;
+          }
+
+          // New Telegram user -> save to Neon
+          const created = await db
+            .insert(users)
+            .values({
+              fullName,
+              email: null,
+              password: null,
+              telegramId,
               telegramUsername: telegramUser.username ?? null,
+              status: "PENDING",
+              role: "USER",
             })
-            .where(eq(users.id, user.id))
             .returning();
 
-          const updatedUser = updated[0] ?? user;
+          const newUser = created[0];
+
+          if (!newUser) {
+            return null;
+          }
 
           return {
-            id: updatedUser.id.toString(),
-            email: updatedUser.email ?? undefined,
-            name: updatedUser.fullName,
+            id: newUser.id.toString(),
+            email: undefined,
+            name: newUser.fullName,
           } as User;
-        }
+        } catch (error) {
+          console.error("[Telegram Auth] Failed:", error);
 
-        // =================================================
-        // FIRST TELEGRAM LOGIN
-        // =================================================
-
-        const fullName = [telegramUser.first_name, telegramUser.last_name]
-          .filter(Boolean)
-          .join(" ");
-
-        const created = await db
-          .insert(users)
-          .values({
-            fullName,
-
-            // Telegram cannot provide these BookWise
-            // fields, so they are initially empty.
-            email: null,
-            //   universityId: null,
-            password: null,
-            //   universityCard: null,
-
-            telegramId,
-            telegramUsername: telegramUser.username ?? null,
-
-            status: "PENDING",
-            role: "USER",
-          })
-          .returning();
-
-        const newUser = created[0];
-
-        if (!newUser) {
           return null;
         }
-
-        return {
-          id: newUser.id.toString(),
-          email: undefined,
-          name: newUser.fullName,
-        } as User;
       },
     }),
   ],
