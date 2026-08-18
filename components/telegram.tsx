@@ -23,14 +23,14 @@ interface UserData {
 }
 export default function TelegramAuth() {
   const router = useRouter();
-  const [userData, setUserData] = useState<UserData | null>(null);
+  // const [userData, setUserData] = useState<UserData | null>(null);
   const [checking, setChecking] = useState(true);
 
-  useEffect(() => {
-    if (WebApp.initDataUnsafe.user) {
-      setUserData(WebApp.initDataUnsafe.user as UserData);
-    }
-  }, []);
+  // useEffect(() => {
+  //   if (WebApp.initDataUnsafe.user) {
+  //     setUserData(WebApp.initDataUnsafe.user as UserData);
+  //   }
+  // }, []);
 
   useEffect(() => {
     async function authenticate() {
@@ -98,7 +98,7 @@ export default function TelegramAuth() {
       <div className="rounded-lg bg-black px-6 py-4 text-white">
         Signing in with Telegram...
       </div>
-      {userData ? (
+      {/* {userData ? (
         <>
           <h1 className="text-2xl font-bold mb-4">User Data</h1>
           <ul>
@@ -112,7 +112,7 @@ export default function TelegramAuth() {
         </>
       ) : (
         <div>Loading...</div>
-      )}
+      )} */}
     </div>
   );
 }
