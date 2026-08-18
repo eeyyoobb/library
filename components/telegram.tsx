@@ -1,16 +1,7 @@
 "use client";
 
+import { authenticateTelegramUser } from "@/lib/telegram";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import type { WebApp as TeleWebApp } from "@twa-dev/types";
-
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp: TeleWebApp;
-    };
-  }
-}
 
 interface UserData {
   id: number;
@@ -22,18 +13,27 @@ interface UserData {
 }
 
 export default function TelegramAuth() {
-  const router = useRouter();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isTelegramEnv, setIsTelegramEnv] = useState(false);
 
   useEffect(() => {
     const initTelegram = async () => {
-      if (typeof window !== "undefined") {
-        const WebApp = (await import("@twa-dev/sdk")).default;
-        WebApp.ready();
+      if (typeof window === "undefined") return;
 
-        if (WebApp.initDataUnsafe?.user) {
-          setUserData(WebApp.initDataUnsafe.user as UserData);
+      const WebApp = (await import("@twa-dev/sdk")).default;
+      WebApp.ready();
+
+      const user = WebApp.initDataUnsafe?.user as UserData | undefined;
+
+      if (user) {
+        setIsTelegramEnv(true);
+        setUserData(user);
+
+        // Authenticate/Sync with Neon DB
+        const result = await authenticateTelegramUser(user);
+        if (!result.success) {
+          console.error("Failed to sync Telegram user with database.");
         }
       }
       setLoading(false);
@@ -41,6 +41,9 @@ export default function TelegramAuth() {
 
     initTelegram();
   }, []);
+
+  // Do not render anything if opened outside Telegram
+  if (!isTelegramEnv) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 text-white">
@@ -51,15 +54,10 @@ export default function TelegramAuth() {
           </p>
         ) : userData ? (
           <>
-            <h1 className="mb-4 text-2xl font-bold">User Data</h1>
-            <ul className="text-left text-sm space-y-1">
-              <li>ID: {userData.id}</li>
-              <li>First Name: {userData.first_name}</li>
-              <li>Last Name: {userData.last_name || "N/A"}</li>
-              <li>Username: {userData.username || "N/A"}</li>
-              <li>Language Code: {userData.language_code}</li>
-              <li>Is Premium: {userData.is_premium ? "Yes" : "No"}</li>
-            </ul>
+            <h1 className="mb-4 text-2xl font-bold">
+              Welcome, {userData.first_name}
+            </h1>
+            <p className="text-sm text-zinc-400">Signed in via Telegram</p>
           </>
         ) : (
           <p className="text-sm text-red-400">

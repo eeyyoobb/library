@@ -7,7 +7,6 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { db } from "@/database/drizzle";
 import { users } from "@/database/schema";
 import { eq } from "drizzle-orm";
-import { validateTelegramInitData } from "@/lib/telegram";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   session: {
@@ -76,94 +75,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     // =====================================================
     // TELEGRAM MINI APP LOGIN
     // =====================================================
-    CredentialsProvider({
-      id: "telegram",
-      name: "Telegram",
-
-      credentials: {
-        initData: {
-          label: "Telegram initData",
-          type: "text",
-        },
-      },
-
-      async authorize(credentials) {
-        const initData = credentials?.initData;
-
-        if (!initData || typeof initData !== "string") {
-          return null;
-        }
-
-        try {
-          const telegramUser = await validateTelegramInitData(initData);
-
-          const telegramId = String(telegramUser.id);
-
-          const fullName = [telegramUser.first_name, telegramUser.last_name]
-            .filter(Boolean)
-            .join(" ");
-
-          // Find Telegram account
-          const existing = await db
-            .select()
-            .from(users)
-            .where(eq(users.telegramId, telegramId))
-            .limit(1);
-
-          // Existing user -> update and sign in
-          if (existing.length > 0) {
-            const user = existing[0];
-
-            const updated = await db
-              .update(users)
-              .set({
-                fullName,
-                telegramUsername: telegramUser.username ?? null,
-              })
-              .where(eq(users.id, user.id))
-              .returning();
-
-            const updatedUser = updated[0] ?? user;
-
-            return {
-              id: updatedUser.id.toString(),
-              email: updatedUser.email ?? undefined,
-              name: updatedUser.fullName,
-            } as User;
-          }
-
-          // New Telegram user -> save to Neon
-          const created = await db
-            .insert(users)
-            .values({
-              fullName,
-              email: null,
-              password: null,
-              telegramId,
-              telegramUsername: telegramUser.username ?? null,
-              status: "PENDING",
-              role: "USER",
-            })
-            .returning();
-
-          const newUser = created[0];
-
-          if (!newUser) {
-            return null;
-          }
-
-          return {
-            id: newUser.id.toString(),
-            email: undefined,
-            name: newUser.fullName,
-          } as User;
-        } catch (error) {
-          console.error("[Telegram Auth] Failed:", error);
-
-          return null;
-        }
-      },
-    }),
   ],
 
   pages: {
