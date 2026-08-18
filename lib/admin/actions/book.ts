@@ -27,6 +27,7 @@ export const createBook = async (params: BookParams) => {
         summary: params.summary,
         packageUrl: params.packageUrl,
         uploader: params.uploader,
+        coverUrl: params.coverUrl,
       })
       .returning();
 

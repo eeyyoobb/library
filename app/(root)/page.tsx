@@ -17,9 +17,9 @@ const Home = async () => {
     .orderBy(desc(books.createdAt))
     .limit(10);
 
-  // if (latestBooks.length === 0) {
-  //   return <div>No books available.</div>;
-  // }
+  if (latestBooks.length === 0) {
+    return <div>No books available.</div>;
+  }
 
   return (
     <>

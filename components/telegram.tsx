@@ -2,8 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import WebApp from "@twa-dev/sdk";
-import { authenticateTelegramUser } from "@/lib/actions/auth";
+import type { WebApp as TeleWebApp } from "@twa-dev/types";
+
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp: TeleWebApp;
+    };
+  }
+}
+
 interface UserData {
   id: number;
   first_name: string;
@@ -12,25 +20,39 @@ interface UserData {
   language_code: string;
   is_premium?: boolean;
 }
+
 export default function TelegramAuth() {
   const router = useRouter();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    if (WebApp.initDataUnsafe.user) {
-      setUserData(WebApp.initDataUnsafe.user as UserData);
-    }
-  }, []);
 
-  if (!loading) return null;
+  useEffect(() => {
+    const initTelegram = async () => {
+      if (typeof window !== "undefined") {
+        const WebApp = (await import("@twa-dev/sdk")).default;
+        WebApp.ready();
+
+        if (WebApp.initDataUnsafe?.user) {
+          setUserData(WebApp.initDataUnsafe.user as UserData);
+        }
+      }
+      setLoading(false);
+    };
+
+    initTelegram();
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 text-white">
       <div className="rounded-lg bg-zinc-900 p-6 text-center">
-        {userData ? (
+        {loading ? (
+          <p className="animate-pulse text-sm">
+            Authenticating with Telegram...
+          </p>
+        ) : userData ? (
           <>
-            <h1 className="text-2xl font-bold mb-4">User Data</h1>
-            <ul>
+            <h1 className="mb-4 text-2xl font-bold">User Data</h1>
+            <ul className="text-left text-sm space-y-1">
               <li>ID: {userData.id}</li>
               <li>First Name: {userData.first_name}</li>
               <li>Last Name: {userData.last_name || "N/A"}</li>
@@ -40,8 +62,8 @@ export default function TelegramAuth() {
             </ul>
           </>
         ) : (
-          <p className="animate-pulse text-sm">
-            Authenticating with Telegram...
+          <p className="text-sm text-red-400">
+            Failed to load Telegram user data.
           </p>
         )}
       </div>
