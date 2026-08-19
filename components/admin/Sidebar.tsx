@@ -7,6 +7,7 @@ import { cn, getInitials } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Session } from "next-auth";
+import IchthysLogo from "../ui/logo";
 
 const Sidebar = ({ session }: { session: Session }) => {
   const pathname = usePathname();
@@ -15,13 +16,13 @@ const Sidebar = ({ session }: { session: Session }) => {
     <div className="admin-sidebar">
       <div>
         <div className="logo">
-          <Image
+          {/* <Image
             src="/icons/admin/logo.svg"
             alt="logo"
             height={37}
             width={37}
-          />
-          <h1>BookWise</h1>
+          /> */}
+          <IchthysLogo />
         </div>
 
         <div className="mt-10 flex flex-col gap-5">

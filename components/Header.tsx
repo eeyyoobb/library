@@ -6,6 +6,7 @@ import SearchBar from "./searchBar";
 import { db } from "@/database/drizzle";
 import { users } from "@/database/schema";
 import { eq } from "drizzle-orm";
+import IchthysLogo from "./ui/logo";
 
 const Header = async () => {
   const session = await auth();
@@ -18,9 +19,8 @@ const Header = async () => {
 
   return (
     <header className="my-10 flex items-center justify-between gap-5">
-      <Link href="/">
-        <Image src="/icons/logo.svg" alt="logo" width={40} height={40} />
-      </Link>
+      {/* <Image src="/icons/logo.svg" alt="logo" width={40} height={40} /> */}
+      <IchthysLogo className="text-primary" />
 
       <div className="flex flex-1 max-w-md mx-4">
         <SearchBar />
